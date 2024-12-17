@@ -59,6 +59,7 @@ class AwsPowertoolsLambdaStack(Stack):
             # stage_name="$default", # Default name
             auto_deploy=True,
             description="Stage with Throttling for the HttpApi",
+            # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_apigatewayv2.ThrottleSettings.html
             throttle=apigwv2.ThrottleSettings(
                 burst_limit=5,
                 rate_limit=5,

@@ -3,7 +3,14 @@ import os
 
 import aws_cdk as cdk
 
-from aws_powertools_lambda.aws_powertools_lambda_stack import AwsPowertoolsLambdaStack
+
+### API GATEWAY V2 ###
+# from apigateway_v2.aws_powertools_lambda_stack import AwsPowertoolsLambdaStack
+
+### API GATEWAY V1 ###
+from apigateway_v1.aws_powertools_lambda_stack import AwsPowertoolsLambdaStack
+
+
 
 app = cdk.App()
 AwsPowertoolsLambdaStack(

@@ -7,6 +7,7 @@ from aws_lambda_powertools.logging import correlation_paths
 
 logger = Logger(service="APP")
 
+# Rest is V1, HTTP is V2
 app = APIGatewayHttpResolver()
 
 

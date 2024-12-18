@@ -34,7 +34,7 @@ class AwsPowertoolsLambdaStack(Stack):
         lambda_func = aws_lambda.Function(
             self,
             'LambdaFunction',
-            code=aws_lambda.Code.from_asset('./aws_powertools_lambda/lambda'),
+            code=aws_lambda.Code.from_asset('./apigateway_v2/lambda'),
             description='Lambda function with Powertools.',
             runtime=aws_lambda.Runtime.PYTHON_3_12,
             handler='api_gateway_lambda.lambda_handler',

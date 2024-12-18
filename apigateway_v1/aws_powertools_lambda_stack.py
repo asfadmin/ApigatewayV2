@@ -54,6 +54,11 @@ class AwsPowertoolsLambdaStack(Stack):
         ###############
         ## WAF Stuff ##
         ###############
+        # NOTE: If this is ever moved behind CloudFront or any loadbalancer/proxy, you'll need to
+        # use the IP address in the header instead (x-forwarded-for). Users can change this though,
+        # so you don't want to trust the one *they* provide, create it yourself. If you DON'T do this,
+        # you'll only see the CloudFront / Proxy's IP address at the WAF.
+
         # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.StatementProperty.html
         rate_limit_statement = wafv2.CfnWebACL.StatementProperty(
             rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
@@ -97,7 +102,11 @@ class AwsPowertoolsLambdaStack(Stack):
                 wafv2.CfnWebACL.RuleProperty(
                     name="RateLimiter",
                     priority=1,
-                    action=wafv2.CfnWebACL.RuleActionProperty(block={}),
+                    action=wafv2.CfnWebACL.RuleActionProperty(
+                        block=wafv2.CfnWebACL.BlockActionProperty(
+                            custom_response=wafv2.CfnWebACL.CustomResponseProperty(response_code=429),
+                        ),
+                    ),
                     statement=rate_limit_statement,
                     # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.VisibilityConfigProperty.html
                     visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(

@@ -9,6 +9,9 @@ from aws_cdk import(
 from cdk_aws_lambda_powertools_layer import LambdaPowertoolsLayer
 from constructs import Construct
 
+# TODO: CHANGE ME!! (Just this low to validate it works...)
+REQUEST_LIMIT_PER_MIN = 10
+
 class AwsPowertoolsLambdaStack(Stack):
 
     def __init__(self, scope: Construct, construct_id: str, **kwargs) -> None:
@@ -51,28 +54,13 @@ class AwsPowertoolsLambdaStack(Stack):
         ###############
         ## WAF Stuff ##
         ###############
-        # # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.StatementProperty.html
-        # ip_rate_limit_statement = wafv2.CfnWebACL.StatementProperty(
-        #     # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.RateBasedStatementProperty.html
-        #     rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
-        #         aggregate_key_type="IP",
-        #         # Default is per 5 minutes, make it per min:
-        #         evaluation_window_sec=60,
-        #         limit=10, # TODO: CHANGE ME!! (Just this low to validate it works...)
-        #     )
-        # )
-        # # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.StatementProperty.html
-        # endpoint_rate_limit_statement = wafv2.CfnWebACL.StatementProperty(
-        #     # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.RateBasedStatementProperty.html
-        #     rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
-        #         # TODO: Figure this out if needed. Realized the custom_key option bellow might be better.
-        #     )
-        # )
+        # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.StatementProperty.html
         rate_limit_statement = wafv2.CfnWebACL.StatementProperty(
             rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
                 aggregate_key_type="CUSTOM_KEYS",
+                # Default is 5 minutes, but 1 min is easier to think about:
                 evaluation_window_sec=60,
-                limit=10, # TODO: CHANGE ME!! (Just this low to validate it works...)
+                limit=REQUEST_LIMIT_PER_MIN,
                 # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.RateBasedStatementCustomKeyProperty.html
                 custom_keys=[
                     wafv2.CfnWebACL.RateBasedStatementCustomKeyProperty(
@@ -86,6 +74,9 @@ class AwsPowertoolsLambdaStack(Stack):
                             )]
                         ),
                     ),
+                    # This IP block must not be the first element in this list. That's how
+                    # aws knows for sure you're not ONLY declaring the IP block.
+                    # (If that's what you want, there's another `aggregate_key_type` for that).
                     wafv2.CfnWebACL.RateBasedStatementCustomKeyProperty(
                         ip={},
                     ),
@@ -133,5 +124,5 @@ class AwsPowertoolsLambdaStack(Stack):
             self,
             "ApiUrl",
             value=rest_api.url,
-            description="The url for our API Gateway v2.",
+            description="The url for our API Gateway",
         )

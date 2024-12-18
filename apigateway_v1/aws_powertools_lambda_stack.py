@@ -51,33 +51,67 @@ class AwsPowertoolsLambdaStack(Stack):
         ###############
         ## WAF Stuff ##
         ###############
+        # # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.StatementProperty.html
+        # ip_rate_limit_statement = wafv2.CfnWebACL.StatementProperty(
+        #     # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.RateBasedStatementProperty.html
+        #     rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
+        #         aggregate_key_type="IP",
+        #         # Default is per 5 minutes, make it per min:
+        #         evaluation_window_sec=60,
+        #         limit=10, # TODO: CHANGE ME!! (Just this low to validate it works...)
+        #     )
+        # )
+        # # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.StatementProperty.html
+        # endpoint_rate_limit_statement = wafv2.CfnWebACL.StatementProperty(
+        #     # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.RateBasedStatementProperty.html
+        #     rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
+        #         # TODO: Figure this out if needed. Realized the custom_key option bellow might be better.
+        #     )
+        # )
+        rate_limit_statement = wafv2.CfnWebACL.StatementProperty(
+            rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
+                aggregate_key_type="CUSTOM_KEYS",
+                evaluation_window_sec=60,
+                limit=10, # TODO: CHANGE ME!! (Just this low to validate it works...)
+                # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.RateBasedStatementCustomKeyProperty.html
+                custom_keys=[
+                    wafv2.CfnWebACL.RateBasedStatementCustomKeyProperty(
+                        # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.RateLimitUriPathProperty.html
+                        uri_path=wafv2.CfnWebACL.RateLimitUriPathProperty(
+                            # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.TextTransformationProperty.html
+                            text_transformations=[wafv2.CfnWebACL.TextTransformationProperty(
+                                priority=0,
+                                # https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-properties-wafv2-webacl-texttransformation.html#cfn-wafv2-webacl-texttransformation-type
+                                type="NONE",
+                            )]
+                        ),
+                    ),
+                    wafv2.CfnWebACL.RateBasedStatementCustomKeyProperty(
+                        ip={},
+                    ),
+                ],
+            )
+        )
+
         # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.html
         cfn_web_acl = wafv2.CfnWebACL(
             self,
             "WAFv2",
-            description="WAFv2 for Rest API",
+            description=f"WAFv2 for {rest_api.rest_api_name} - {rest_api.rest_api_id}",
             scope="REGIONAL", # Only other option is CLOUDFRONT, and that must be deployed to us-east-1.
             # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.DefaultActionProperty.html#count
             default_action=wafv2.CfnWebACL.DefaultActionProperty(allow={}),
             rules=[
                 # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.RuleProperty.html
                 wafv2.CfnWebACL.RuleProperty(
-                    name="IpRateLimiter",
+                    name="RateLimiter",
                     priority=1,
                     action=wafv2.CfnWebACL.RuleActionProperty(block={}),
-                    # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.StatementProperty.html
-                    statement=wafv2.CfnWebACL.StatementProperty(
-                        # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.RateBasedStatementProperty.html
-                        rate_based_statement=wafv2.CfnWebACL.RateBasedStatementProperty(
-                            aggregate_key_type="IP",
-                            # Per 5 minute period:
-                            limit=10, # TODO: CHANGE ME!! (Just this low to validate it works...)
-                        )
-                    ),
+                    statement=rate_limit_statement,
                     # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_wafv2.CfnWebACL.VisibilityConfigProperty.html
                     visibility_config=wafv2.CfnWebACL.VisibilityConfigProperty(
                         cloud_watch_metrics_enabled=True,
-                        metric_name="IpRateLimiter",
+                        metric_name="RateLimiter",
                         sampled_requests_enabled=True,
                     ),
                 ),

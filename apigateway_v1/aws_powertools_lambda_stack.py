@@ -6,7 +6,6 @@ from aws_cdk import(
     aws_wafv2 as wafv2,
 )
 
-from cdk_aws_lambda_powertools_layer import LambdaPowertoolsLayer
 from constructs import Construct
 
 # TODO: CHANGE ME!! (Just this low to validate it works...)
@@ -20,13 +19,16 @@ class AwsPowertoolsLambdaStack(Stack):
         ##################
         ## Lambda Stuff ##
         ##################
-
-        # https://github.com/aws-powertools/powertools-lambda-layer-cdk
-        powertoolsLayer = LambdaPowertoolsLayer(
+        lambda_runtime = aws_lambda.Runtime.PYTHON_3_12
+        ## Get the powertools arn from:
+        # https://docs.powertools.aws.dev/lambda/python/latest/
+        ## Import it with CDK:
+        # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_lambda.LayerVersion.html#static-fromwbrlayerwbrversionwbrarnscope-id-layerversionarn
+        python_version = lambda_runtime.name.lower().replace('.', '') # pylint: disable=no-member
+        powertools_layer = aws_lambda.LayerVersion.from_layer_version_arn(
             self,
-            'PowertoolsLayer',
-            include_extras=True,
-            runtime_family=aws_lambda.RuntimeFamily.PYTHON,
+            'LambdaPowertoolsLayer',
+            f'arn:aws:lambda:{self.region}:017000801446:layer:AWSLambdaPowertoolsPythonV3-{python_version}-x86_64:4',
         )
 
         # https://docs.aws.amazon.com/cdk/api/v2/docs/aws-cdk-lib.aws_lambda.Function.html
@@ -35,9 +37,9 @@ class AwsPowertoolsLambdaStack(Stack):
             'LambdaFunction',
             code=aws_lambda.Code.from_asset('./apigateway_v1/lambda'),
             description='Lambda function with Powertools.',
-            runtime=aws_lambda.Runtime.PYTHON_3_12,
+            runtime=lambda_runtime,
             handler='api_gateway_lambda.lambda_handler',
-            layers=[powertoolsLayer],
+            layers=[powertools_layer],
         )
 
         ##########################
